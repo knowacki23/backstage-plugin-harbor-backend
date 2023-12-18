@@ -1,8 +1,7 @@
 import { Base64 } from 'js-base64'
 import moment from 'moment'
 import fetch from 'node-fetch'
-import { HarborInstance } from './config'
-import { NotFoundError } from '@backstage/errors'
+import { getCurrentHarborInstance, HarborInstance } from './config'
 
 export async function getArtifacts(
   harborInstances: HarborInstance[],
@@ -10,18 +9,7 @@ export async function getArtifacts(
   project: string,
   repository: string
 ) {
-  const currentHarborInstance = harborInstances.find((i) => i.host === host)
-  if (!currentHarborInstance) {
-    if (host) {
-      throw new NotFoundError(
-        `No Harbor instance for host '${host}' found. Please configure it in your app configuration.`
-      )
-    } else {
-      throw new NotFoundError(
-        'No default Harbor configuration found. Please configure it in your app configuration.'
-      )
-    }
-  }
+  const currentHarborInstance = getCurrentHarborInstance(harborInstances, host)
 
   const baseUrl = currentHarborInstance.apiBaseUrl
   const { username, password } = currentHarborInstance
@@ -32,7 +20,6 @@ export async function getArtifacts(
   }
 
   const url = `${baseUrl}/api/v2.0/projects/${project}/repositories/${repo}/artifacts?page=1&page_size=10&with_tag=true&with_label=false&with_scan_overview=false&with_signature=false&with_immutable_status=false`
-
   const response = await fetch(url, {
     headers: {
       'Content-Type': 'application/json',
